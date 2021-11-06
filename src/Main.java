@@ -10,27 +10,35 @@ public class Main {
 
         StudentList students = new StudentList();
 
-//        students.addAssignment("Foo");
-//        students.addAssignment("Bar");
-//        students.addAssignment("Baz");
-//        students.addAssignment("Buz");
-        students.addStudent(0, "Jefferey");
-        students.addStudent(0, "Cheems");
+        students.addAssignment("Foo");
+        students.addAssignment("Bar");
+        students.addAssignment("Bif");
+        students.addAssignment("Baz");
+        students.addStudent(25340978, "Spam");
+        students.addStudent(1, "Eggs");
 
 
         JPanel records = new JPanel();
+
         TableModel dataModel = new AbstractTableModel() {
             public int getColumnCount() { return students.getAssignmentCount() + 2; }
             public int getRowCount() { return students.getStudentCount(); }
-            public boolean isCellEditable(int row, int col) { return false; }
+            public boolean isCellEditable(int row, int col) { return true; }
+            public void setValueAt(Object val, int row, int col) {
+                if (col == 0) {
+                    students.setID(row, Integer.parseInt(val.toString()));
+                } else if (col == 1) {
+                    students.setName(row, val.toString());
+                } else {
+                    students.setScore(row, students.getAssignmentAtID(col - 2), Double.parseDouble(val.toString()));
+                }
+            }
             public String getColumnName(int col) {
                 if (col == 0) {
                     return "Student ID";
-                }
-                if (col == 1) {
+                } else if (col == 1) {
                     return "Student Name";
-                }
-                else {
+                } else {
                     return students.getAssignmentAtID(col - 2);
                 }
             }
