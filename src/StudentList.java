@@ -9,7 +9,7 @@ public class StudentList implements java.io.Serializable {
 
     }
 
-    void AddStudent(int id, String name) {
+    void addStudent(int id, String name) {
         StudentRecord toAdd = new StudentRecord(id, name);
         for (String i : assignments) {
             toAdd.addScore(i, 0);
@@ -17,11 +17,35 @@ public class StudentList implements java.io.Serializable {
         students.add(toAdd);
     }
 
-    void AddAssignment(String title) {
+    void addAssignment(String title) {
         assignments.add(title);
 
         for (StudentRecord student : students) {
-            student.scores.put(title, null);
+            student.scores.put(title, 0D);
         }
+    }
+
+    int getAssignmentCount() {
+        return assignments.toArray().length;
+    }
+
+    int getStudentCount() {
+        return students.toArray().length;
+    }
+
+    String getNameAtID(int id) {
+        return students.get(id).name;
+    }
+
+    String getAssignmentAtID(int id) {
+        return assignments.get(id);
+    }
+
+    int getStudentID(int index) {
+        return students.get(index).getID();
+    }
+
+    double getStudentScore(int id, String title) {
+        return students.get(id).scores.get(title);
     }
 }

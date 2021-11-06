@@ -18,4 +18,8 @@ public class StudentRecord implements java.io.Serializable {
     double getScore(String title) {
         return scores.get(title);
     }
+
+    int getID() {
+        return id;
+    }
 }
