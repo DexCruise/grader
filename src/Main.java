@@ -5,15 +5,12 @@ import java.util.ArrayList;
 import java.util.Random;
 
 public class Main {
+
     private static final class NameDisplayStyle {
         public static final int FIRST_FIRST = 0, LAST_FIRST = 1;
     }
 
-    private static void displayGUI(StudentList students) {
-        JFrame frame = new JFrame("StudentRecords v0.0.0 by Dexter");
-        frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-
-        JPanel records = new JPanel();
+    private static JTable createStudentTable(StudentList students) {
         JTable table = new JTable();
 
         int nameDisplayStyle = NameDisplayStyle.LAST_FIRST;
@@ -64,35 +61,47 @@ public class Main {
 
         };
 
-        JViewport viewport = new JViewport();
-        viewport.setScrollMode(JViewport.SIMPLE_SCROLL_MODE);
-
-
-        table.setFillsViewportHeight(true);
         table.setModel(dataModel);
+
+        return table;
+    }
+
+    /**
+     * Creates and displays a swing GUI of a table
+     *
+     * @param table table of data to display
+     */
+
+    private static void displayGUI(JTable table) {
+        JFrame frame = new JFrame("StudentRecords v0.0.0 by Dexter");
+        frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+
+        JPanel records = new JPanel();
+
+
         table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
 
         JScrollPane scrollPane = new JScrollPane(table);
-
         scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
         scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 
-        viewport.add(scrollPane);
-
-        records.add(viewport);
-
         frame.add(records);
+
         frame.pack();
+
         frame.setVisible(true);
     }
 
-    public static StudentList makeStudentListForTesting() {
+    /**
+     *
+     * @return returns a randomly generated StudentList with a few assignments and
+     */
+
+    public static StudentList makeStudentListForTesting(int StudentCount, int AssignmentCount) {
         StudentList students = new StudentList();
 
-        students.addAssignment("Foo");
-        students.addAssignment("Bar");
-
         ArrayList<String> names = new ArrayList<>();
+
         names.add("Spam");
         names.add("Eggs");
         names.add("Coconuts");
@@ -106,23 +115,34 @@ public class Main {
         names.add("That");
         names.add("Timothy");
 
-        for (int i = 0; i < 100; i++) {
-            students.addStudent(i,
-                    new Name(
-                            names.get(new Random().nextInt(names.size())),
-                            names.get(new Random().nextInt(names.size()))
-                    )
-            );
-        }
+        ArrayList<String> assignments = new ArrayList<>();
+
+        assignments.add("Foo");
+        assignments.add("Bar");
+        assignments.add("Homework");
+        assignments.add("Project");
+        assignments.add("Research");
+        assignments.add("Paper");
+        assignments.add("Essay");
+
+
+        for (int i = 0; i < StudentCount; i++) students.addStudent(i,
+                    new Name(names.get(new Random().nextInt(names.size())),
+                            names.get(new Random().nextInt(names.size()))));
+
+
+        for (int i = 0; i < AssignmentCount; i++)
+            students.addAssignment(assignments.get(new Random().nextInt(names.size())));
 
         students.sort();
-
         return students;
     }
 
     public static void main(String[] args) {
-        StudentList students = makeStudentListForTesting();
+        StudentList students = makeStudentListForTesting(100, 2);
 
-        displayGUI(students);
+        JTable studentTable = createStudentTable(students);
+
+        displayGUI(studentTable);
     }
 }
