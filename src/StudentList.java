@@ -1,15 +1,15 @@
 import java.util.ArrayList;
 
 public class StudentList implements java.io.Serializable {
-    ArrayList<StudentRecord> students = new ArrayList<>();
-    ArrayList<String> assignments = new ArrayList<>();
+    final ArrayList<StudentRecord> students = new ArrayList<>();
+    final ArrayList<String> assignments = new ArrayList<>();
 
 
     StudentList() {
 
     }
 
-    void addStudent(int id, String name) {
+    void addStudent(int id, Name name) {
         StudentRecord toAdd = new StudentRecord(id, name);
         for (String i : assignments) {
             toAdd.setScore(i, 0);
@@ -33,7 +33,7 @@ public class StudentList implements java.io.Serializable {
         return students.toArray().length;
     }
 
-    String getNameAtID(int id) {
+    Name getNameAtID(int id) {
         return students.get(id).getName();
     }
 
@@ -57,7 +57,7 @@ public class StudentList implements java.io.Serializable {
         students.get(id).setScore(title, score);
     }
 
-    void setName(int id, String name) {
+    void setName(int id, Name name) {
         students.get(id).setName(name);
     }
 

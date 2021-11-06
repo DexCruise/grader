@@ -2,11 +2,11 @@ import java.util.TreeMap;
 
 public class StudentRecord implements java.io.Serializable {
     public int id;
-    public String name;
-    public TreeMap<String, Double> scores = new TreeMap<>();
+    public Name name;
+    public final TreeMap<String, Double> scores = new TreeMap<>();
 
 
-    StudentRecord(int start_id, String start_name) {
+    StudentRecord(int start_id, Name start_name) {
         id = start_id;
         name = start_name;
 
@@ -32,11 +32,11 @@ public class StudentRecord implements java.io.Serializable {
         return id;
     }
 
-    void setName(String nameToSet) {
+    void setName(Name nameToSet) {
         name = nameToSet;
     }
 
-    String getName() {
+    Name getName() {
         return name;
     }
 }
