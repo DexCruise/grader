@@ -9,45 +9,12 @@ public class Main {
         public static final int FIRST_FIRST = 0, LAST_FIRST = 1;
     }
 
-    public static void main(String[] args) {
+    private static void displayGUI(StudentList students) {
         JFrame frame = new JFrame("StudentRecords v0.0.0 by Dexter");
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
-
-        StudentList students = new StudentList();
-
-        students.addAssignment("Foo");
-        students.addAssignment("Bar");
-
-        ArrayList<String> names = new ArrayList<>();
-        names.add("Spam");
-        names.add("Eggs");
-        names.add("Coconuts");
-        names.add("Cheems");
-        names.add("Doge");
-        names.add("Sus");
-        names.add("Among");
-        names.add("Us");
-        names.add("This");
-        names.add("And");
-        names.add("That");
-        names.add("Timothy");
-
-        for (int i = 0; i < 100; i++) {
-            students.addStudent(i,
-                    new Name(
-                            names.get(new Random().nextInt(names.size())),
-                            names.get(new Random().nextInt(names.size()))
-                    )
-            );
-        }
-
-        students.sort();
-
         JPanel records = new JPanel();
-
         JTable table = new JTable();
-
 
         int nameDisplayStyle = NameDisplayStyle.LAST_FIRST;
         TableModel dataModel = new AbstractTableModel() {
@@ -117,5 +84,45 @@ public class Main {
         frame.add(records);
         frame.pack();
         frame.setVisible(true);
+    }
+
+    public static StudentList makeStudentListForTesting() {
+        StudentList students = new StudentList();
+
+        students.addAssignment("Foo");
+        students.addAssignment("Bar");
+
+        ArrayList<String> names = new ArrayList<>();
+        names.add("Spam");
+        names.add("Eggs");
+        names.add("Coconuts");
+        names.add("Cheems");
+        names.add("Doge");
+        names.add("Sus");
+        names.add("Among");
+        names.add("Us");
+        names.add("This");
+        names.add("And");
+        names.add("That");
+        names.add("Timothy");
+
+        for (int i = 0; i < 100; i++) {
+            students.addStudent(i,
+                    new Name(
+                            names.get(new Random().nextInt(names.size())),
+                            names.get(new Random().nextInt(names.size()))
+                    )
+            );
+        }
+
+        students.sort();
+
+        return students;
+    }
+
+    public static void main(String[] args) {
+        StudentList students = makeStudentListForTesting();
+
+        displayGUI(students);
     }
 }
