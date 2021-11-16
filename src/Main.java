@@ -1,6 +1,7 @@
 import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableModel;
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -12,6 +13,7 @@ public class Main {
 
     private static JTable createStudentTable(StudentList students) {
         JTable table = new JTable();
+        table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 
         int nameDisplayStyle = NameDisplayStyle.LAST_FIRST;
         TableModel dataModel = new AbstractTableModel() {
@@ -21,15 +23,13 @@ public class Main {
             public void setValueAt(Object val, int row, int col) {
                 if (col == 0) {
                     students.setID(row, Integer.parseInt(val.toString()));
-                    students.sort();
-                    table.setModel(this);
                 } else if (col == 1) {
                     students.setName(row, Name.parseName(val.toString()));
-                    students.sort();
-                    table.setModel(this);
                 } else {
                     students.setScore(row, students.getAssignmentAtID(col - 2), Double.parseDouble(val.toString()));
                 }
+                students.sort();
+                table.setModel(this);
             }
             public String getColumnName(int col) {
                 if (col == 0) {
@@ -76,16 +76,21 @@ public class Main {
         JFrame frame = new JFrame("StudentRecords v0.0.0 by Dexter");
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
-        JPanel records = new JPanel();
 
 
-        table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
 
-        JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
-        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 
-        frame.add(records);
+
+        JScrollPane scrollPane = new JScrollPane(table,
+                ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+
+        scrollPane.setPreferredSize(new Dimension(400, 200));
+
+        scrollPane.getVerticalScrollBar().setUnitIncrement(10);
+        scrollPane.getHorizontalScrollBar().setUnitIncrement(10);
+
+        frame.add(scrollPane);
 
         frame.pack();
 
@@ -132,17 +137,19 @@ public class Main {
 
 
         for (int i = 0; i < AssignmentCount; i++)
-            students.addAssignment(assignments.get(new Random().nextInt(names.size())));
+            students.addAssignment(assignments.get(new Random().nextInt(assignments.size())));
 
         students.sort();
         return students;
     }
 
     public static void main(String[] args) {
-        StudentList students = makeStudentListForTesting(100, 2);
+        StudentList students = makeStudentListForTesting(2000, 20000);
 
         JTable studentTable = createStudentTable(students);
 
+        System.out.println(studentTable.toString().replaceAll(",", ",\n"));
         displayGUI(studentTable);
+
     }
 }
