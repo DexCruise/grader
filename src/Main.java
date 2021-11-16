@@ -144,7 +144,7 @@ public class Main {
     }
 
     public static void main(String[] args) {
-        StudentList students = makeStudentListForTesting(2000, 20000);
+        StudentList students = makeStudentListForTesting(30, 100);
 
         JTable studentTable = createStudentTable(students);
 
