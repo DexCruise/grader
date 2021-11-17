@@ -1,13 +1,13 @@
 import javax.swing.*;
-import javax.swing.table.AbstractTableModel;
-import javax.swing.table.TableModel;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableColumn;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Random;
-import java.io.File;
 
 public class Main {
 
@@ -20,71 +20,84 @@ public class Main {
     private static final String SAVE = "Save";
     private static final String OPEN = "Open";
 
-    private static File currentFile = new File("test.xml");
+    private static final File currentFile = new File("test.xml");
 
     private static JTable studentTable;
-    private static TableModel dataModel;
     private static StudentList students;
 
     private static final class NameDisplayStyle {
         public static final int FIRST_FIRST = 0, LAST_FIRST = 1;
     }
 
-    private static JTable createStudentTable(StudentList students) {
+    private static class Model extends DefaultTableModel {
+        private static final int nameDisplayStyle = NameDisplayStyle.LAST_FIRST;
+
+        public int getColumnCount() {
+            return students.getAssignmentCount() + 2;
+        }
+
+        public int getRowCount() {
+            return students.getStudentCount();
+        }
+
+        public boolean isCellEditable(int row, int col) {
+            return true;
+        }
+
+        public void setValueAt(Object val, int row, int col) {
+            try {
+                if (col == 0) {
+                    students.setID(row, Integer.parseInt(val.toString()));
+                } else if (col == 1) {
+                    students.setName(row, Name.parseName(val.toString()));
+                } else {
+                    students.setScore(row, students.getAssignmentAtID(col - 2), Double.parseDouble(val.toString()));
+                }
+                students.sort();
+                studentTable.repaint();
+            } catch (NumberFormatException e) {
+                System.out.println("Invalid String");
+            }
+        }
+
+        public String getColumnName(int col) {
+            if (col <= -1) {
+                return "Assignment " + students.getAssignmentCount();
+            } else if (col == 0) {
+                return "Student ID";
+            } else if (col == 1) {
+                return "Student Name";
+            } else {
+                return students.getAssignmentAtID(col - 2);
+            }
+        }
+
+        public Object getValueAt(int row, int col) {
+
+
+            if (col == 0) {
+                return students.getStudentID(row);
+            }
+            if (col == 1) {
+                if (nameDisplayStyle == NameDisplayStyle.FIRST_FIRST) {
+                    return students.getNameAtID(row).firstFirst();
+                }
+                if (nameDisplayStyle == NameDisplayStyle.LAST_FIRST) {
+                    return students.getNameAtID(row).lastFirst();
+                }
+                throw new IllegalStateException("Illegal Name Display Style: " + nameDisplayStyle);
+            } else {
+                return students.getStudentScore(row, students.getAssignmentAtID(col - 2));
+            }
+        }
+    }
+
+    private static JTable createStudentTable() {
         JTable table = new JTable();
         table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 
-        int nameDisplayStyle = NameDisplayStyle.LAST_FIRST;
-        dataModel = new AbstractTableModel() {
-            public int getColumnCount() { return students.getAssignmentCount() + 2; }
-            public int getRowCount() { return students.getStudentCount(); }
-            public boolean isCellEditable(int row, int col) { return true; }
-            public void setValueAt(Object val, int row, int col) {
-                try {
-                    if (col == 0) {
-                        students.setID(row, Integer.parseInt(val.toString()));
-                    } else if (col == 1) {
-                        students.setName(row, Name.parseName(val.toString()));
-                    } else {
-                        students.setScore(row, students.getAssignmentAtID(col - 2), Double.parseDouble(val.toString()));
-                    }
-                    students.sort();
-                } catch (java.lang.NumberFormatException e) {
-                    System.out.println("Invalid String");
-                }
-                table.setModel(this);
-            }
-            public String getColumnName(int col) {
-                if (col == 0) {
-                    return "Student ID";
-                } else if (col == 1) {
-                    return "Student Name";
-                } else {
-                    return students.getAssignmentAtID(col - 2);
-                }
-            }
-            public Object getValueAt(int row, int col) {
-                if (col == 0) {
-                    return students.getStudentID(row);
-                }
-                if (col == 1) {
-                    //noinspection ConstantConditions
-                    if (nameDisplayStyle == NameDisplayStyle.FIRST_FIRST) {
-                        return students.getNameAtID(row).firstFirst();
-                    }
-                    //noinspection ConstantConditions
-                    if (nameDisplayStyle == NameDisplayStyle.LAST_FIRST) {
-                        return students.getNameAtID(row).lastFirst();
-                    }
-                    throw new IllegalStateException("Illegal Name Display Style: " + nameDisplayStyle);
-                } else {
-                    return students.getStudentScore(row, students.getAssignmentAtID(col - 2));
-                }
-            }
-        };
 
-
-        table.setModel(dataModel);
+        table.setModel(new Model());
 
 
         return table;
@@ -224,9 +237,10 @@ public class Main {
     }
 
     public static void main(String[] args) {
-        StudentList students = makeStudentListForTesting(30000, 1000);
+        StudentList students = makeStudentListForTesting(0, 10);
+        students.cleanAssignmentList();
 
-        studentTable = createStudentTable(students);
+        studentTable = createStudentTable();
 
         displayGUI(studentTable);
 
@@ -235,13 +249,20 @@ public class Main {
     private static class HomeMenuButtonListener implements ActionListener {
         public void actionPerformed(final ActionEvent ev) {
             switch (ev.getActionCommand()) {
-                case ADD_STUDENT -> students.addStudent(-1, new Name("Student", "Name"));
-                case ADD_ASSIGNMENT -> students.addAssignment("Assignment " + students.getAssignmentCount());
+                case ADD_STUDENT -> {
+                    students.addStudent(-1, new Name("Student", "Name"));
+                    DefaultTableModel model = (DefaultTableModel) studentTable.getModel();
+                    model.addRow(students.getDataForNewestStudent());
+                }
+                case ADD_ASSIGNMENT -> {
+                    students.addAssignment("Assignment " + students.getAssignmentCount());
+                    studentTable.addColumn(new TableColumn(-1));
+                }
 //                case DEL_ASSIGNMENT -> System.out.println("No Deleting Yet!");
 //                case DEL_STUDENT -> System.out.println("No Deleting Yet!");
             }
 
-            studentTable.setModel(dataModel);
+            studentTable.repaint();
         }
     }
 
@@ -256,7 +277,7 @@ public class Main {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            studentTable.setModel(dataModel);
+            studentTable.repaint();
         }
     }
 }
