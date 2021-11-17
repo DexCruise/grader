@@ -1,6 +1,9 @@
+import java.io.File;
+import java.io.FileWriter;
 import java.util.ArrayList;
+import java.util.HashSet;
 
-public class StudentList implements java.io.Serializable {
+public class StudentList {
     final ArrayList<StudentRecord> students = new ArrayList<>();
     final ArrayList<String> assignments = new ArrayList<>();
 
@@ -8,6 +11,12 @@ public class StudentList implements java.io.Serializable {
     StudentList() {
 
     }
+
+    /*
+    StudentList(File source) {
+        // construct from a file
+    }
+     */
 
     void addStudent(int id, Name name) {
         StudentRecord toAdd = new StudentRecord(id, name);
@@ -20,17 +29,18 @@ public class StudentList implements java.io.Serializable {
     void addAssignment(String title) {
         assignments.add(title);
 
+
         for (StudentRecord student : students) {
             student.scores.put(title, 0D);
         }
     }
 
     int getAssignmentCount() {
-        return assignments.toArray().length;
+        return assignments.size();
     }
 
     int getStudentCount() {
-        return students.toArray().length;
+        return students.size();
     }
 
     Name getNameAtID(int id) {
@@ -63,5 +73,76 @@ public class StudentList implements java.io.Serializable {
 
     void sort() {
         students.sort(StudentRecord::compare);
+    }
+
+    void cleanAssignmentList() {
+        HashSet<String> assignmentSet = new HashSet<>(assignments);
+        assignments.clear();
+        assignments.addAll(assignmentSet);
+    }
+
+    String escapeXML(String xml) {
+        return xml.replaceAll("&", "&amp;")
+                .replaceAll("\"", "&quot;")
+                .replaceAll("'", "&apos;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;");
+    }
+
+    private String serialize() {
+        cleanAssignmentList();
+
+        StringBuilder text = new StringBuilder();
+
+        text.append("<?XML version='1.0'?>\n");
+        text.append("<export version='0.0.0'>\n");
+
+        StringBuilder assignmentElement = new StringBuilder();
+        // <assignments> <a>assignment title</a> </assignments>
+
+        assignmentElement.append("  <assignments>");
+        for (String i : assignments) {
+            assignmentElement.append("\n    <a>");
+            assignmentElement.append(escapeXML(i));
+            assignmentElement.append("</a>");
+        }
+        assignmentElement.append("\n  </assignments>\n");
+
+        text.append(assignmentElement);
+
+        StringBuilder studentElement = new StringBuilder();
+        // <students> <student id='id' name='name'> <s>100<\s> </student> </student>
+
+        studentElement.append("  <students>\n");
+        StringBuilder studentBuilder;
+        for (StudentRecord i : students) {
+            studentBuilder = new StringBuilder();
+            studentBuilder.append("    <student id='");
+            studentBuilder.append(i.getID());
+            studentBuilder.append("' name='");
+            studentBuilder.append(escapeXML(i.getName().firstFirst()));
+            studentBuilder.append("'>\n      ");
+            for (String j : assignments) {
+                studentBuilder.append("<s>");
+                studentBuilder.append(i.getScore(j));
+                studentBuilder.append("</s>");
+            }
+            studentBuilder.append("\n    </student>");
+            studentElement.append(studentBuilder);
+            studentElement.append("\n");
+        }
+        studentElement.append("  </students>");
+
+        text.append(studentElement);
+        text.append("\n</export>");
+
+        return text.toString();
+    }
+    void saveToFile(File file) throws java.io.IOException {
+
+        FileWriter writer = new FileWriter(file);
+        writer.write(this.serialize());
+
+        writer.close();
     }
 }

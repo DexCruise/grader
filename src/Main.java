@@ -4,8 +4,10 @@ import javax.swing.table.TableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Random;
+import java.io.File;
 
 public class Main {
 
@@ -13,6 +15,12 @@ public class Main {
     private static final String DEL_STUDENT = "Remove Student";
     private static final String ADD_ASSIGNMENT = "Add Assignment";
     private static final String DEL_ASSIGNMENT = "Remove Assignment";
+
+    private static final String SAVE_AS = "Save As";
+    private static final String SAVE = "Save";
+    private static final String OPEN = "Open";
+
+    private static File currentFile = new File("test.xml");
 
     private static JTable studentTable;
     private static TableModel dataModel;
@@ -32,14 +40,18 @@ public class Main {
             public int getRowCount() { return students.getStudentCount(); }
             public boolean isCellEditable(int row, int col) { return true; }
             public void setValueAt(Object val, int row, int col) {
-                if (col == 0) {
-                    students.setID(row, Integer.parseInt(val.toString()));
-                } else if (col == 1) {
-                    students.setName(row, Name.parseName(val.toString()));
-                } else {
-                    students.setScore(row, students.getAssignmentAtID(col - 2), Double.parseDouble(val.toString()));
+                try {
+                    if (col == 0) {
+                        students.setID(row, Integer.parseInt(val.toString()));
+                    } else if (col == 1) {
+                        students.setName(row, Name.parseName(val.toString()));
+                    } else {
+                        students.setScore(row, students.getAssignmentAtID(col - 2), Double.parseDouble(val.toString()));
+                    }
+                    students.sort();
+                } catch (java.lang.NumberFormatException e) {
+                    System.out.println("Invalid String");
                 }
-                students.sort();
                 table.setModel(this);
             }
             public String getColumnName(int col) {
@@ -64,15 +76,16 @@ public class Main {
                     if (nameDisplayStyle == NameDisplayStyle.LAST_FIRST) {
                         return students.getNameAtID(row).lastFirst();
                     }
-                    return "FAIL";
+                    throw new IllegalStateException("Illegal Name Display Style: " + nameDisplayStyle);
                 } else {
                     return students.getStudentScore(row, students.getAssignmentAtID(col - 2));
                 }
             }
-
         };
 
+
         table.setModel(dataModel);
+
 
         return table;
     }
@@ -96,24 +109,29 @@ public class Main {
         scrollPane.getVerticalScrollBar().setUnitIncrement(10);
         scrollPane.getHorizontalScrollBar().setUnitIncrement(10);
 
-        ButtonListener buttonListener = new ButtonListener();
+        HomeMenuButtonListener homeMenuButtonListener = new HomeMenuButtonListener();
 
         JPanel buttonPanel = new JPanel();
 
+        //make four buttons for managing things
         JButton addAssignmentButton = new JButton("Add Assignment");
         JButton addStudentButton = new JButton("Add Student");
         JButton deleteAssignmentButton = new JButton("Delete Assignment");
         JButton deleteStudentButton = new JButton("Delete Student");
 
+
+        //set the commands that each of the buttons send
         addAssignmentButton.setActionCommand(ADD_ASSIGNMENT);
         addStudentButton.setActionCommand(ADD_STUDENT);
         deleteAssignmentButton.setActionCommand(DEL_ASSIGNMENT);
         deleteStudentButton.setActionCommand(DEL_STUDENT);
 
-        addAssignmentButton.addActionListener(buttonListener);
-        addStudentButton.addActionListener(buttonListener);
-        deleteAssignmentButton.addActionListener(buttonListener);
-        deleteStudentButton.addActionListener(buttonListener);
+
+        //nicely ask each button to work
+        addAssignmentButton.addActionListener(homeMenuButtonListener);
+        addStudentButton.addActionListener(homeMenuButtonListener);
+        deleteAssignmentButton.addActionListener(homeMenuButtonListener);
+        deleteStudentButton.addActionListener(homeMenuButtonListener);
 
         buttonPanel.add(addAssignmentButton);
         buttonPanel.add(deleteAssignmentButton);
@@ -123,7 +141,34 @@ public class Main {
         buttonPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 20));
         buttonPanel.setMinimumSize(new Dimension(200, 20));
 
-        frame.add(buttonPanel, BorderLayout.BEFORE_FIRST_LINE);
+        JTabbedPane ribbon = new JTabbedPane(JTabbedPane.TOP);
+
+        FileMenuButtonListener fileMenuButtonListener = new FileMenuButtonListener();
+
+        JPanel filePanel = new JPanel();
+
+        filePanel.add(new JLabel("File Menu Incomplete"));
+
+        JButton saveButton = new JButton("Save");
+        JButton saveAsButton = new JButton("Save As");
+        JButton openButton = new JButton("Open");
+
+        saveButton.setActionCommand(SAVE);
+        saveAsButton.setActionCommand(SAVE_AS);
+        openButton.setActionCommand(OPEN);
+
+        saveButton.addActionListener(fileMenuButtonListener);
+        saveAsButton.addActionListener(fileMenuButtonListener);
+        openButton.addActionListener(fileMenuButtonListener);
+
+        filePanel.add(saveButton);
+        filePanel.add(saveAsButton);
+        filePanel.add(openButton);
+
+        ribbon.addTab("File", filePanel);
+        ribbon.addTab("Home", buttonPanel);
+
+        frame.add(ribbon, BorderLayout.BEFORE_FIRST_LINE);
         frame.add(scrollPane, BorderLayout.CENTER);
         frame.pack();
 
@@ -179,25 +224,38 @@ public class Main {
     }
 
     public static void main(String[] args) {
-        StudentList students = makeStudentListForTesting(30, 5);
+        StudentList students = makeStudentListForTesting(30000, 1000);
 
         studentTable = createStudentTable(students);
 
-        System.out.println(studentTable.toString().replaceAll(",", ",\n"));
         displayGUI(studentTable);
 
     }
 
-    public static class ButtonListener implements ActionListener {
+    private static class HomeMenuButtonListener implements ActionListener {
         public void actionPerformed(final ActionEvent ev) {
             switch (ev.getActionCommand()) {
-                case ADD_ASSIGNMENT -> students.addAssignment("New Assignment");
-
                 case ADD_STUDENT -> students.addStudent(-1, new Name("Student", "Name"));
-
-                case DEL_ASSIGNMENT, DEL_STUDENT -> System.out.println("No Deleting Yet!");
+                case ADD_ASSIGNMENT -> students.addAssignment("Assignment " + students.getAssignmentCount());
+//                case DEL_ASSIGNMENT -> System.out.println("No Deleting Yet!");
+//                case DEL_STUDENT -> System.out.println("No Deleting Yet!");
             }
 
+            studentTable.setModel(dataModel);
+        }
+    }
+
+    private static class FileMenuButtonListener implements ActionListener {
+        public void actionPerformed(final ActionEvent ev) {
+            try {
+                switch (ev.getActionCommand()) {
+                    case SAVE -> students.saveToFile(currentFile);
+//                    case SAVE_AS -> students.addAssignment("Assignment " + students.getAssignmentCount());
+                    case OPEN -> System.out.println("not implemented!");
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
             studentTable.setModel(dataModel);
         }
     }
