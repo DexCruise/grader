@@ -130,7 +130,7 @@ public class StudentList {
         text.append(assignmentElement);
 
         StringBuilder studentElement = new StringBuilder();
-        // <students> <student id='id' name='name'> <s>100<\s> </student> </student>
+        // <students> <student id='420' name='hhh'> <s>100<\s> <s>81200<\s> </student> </students>
 
         studentElement.append("<students>");
         StringBuilder studentBuilder;
@@ -212,5 +212,26 @@ public class StudentList {
         writer.write(this.serialize());
 
         writer.close();
+    }
+
+    void setAssignmentName(int index, String newName) {
+        String oldName = assignments.get(index);
+        assignments.set(index, newName);
+        for (StudentRecord i : students) {
+            i.scores.put(newName, i.getScore(oldName));
+            i.scores.remove(oldName);
+        }
+    }
+
+    void deleteStudent(int num) {
+        if (num < 0) return;
+        students.remove(num);
+    }
+    void deleteAssignment(int num) {
+        if (num < 0) return;
+        String assignment = assignments.remove(num);
+        for (StudentRecord i : students) {
+            i.removeScore(assignment);
+        }
     }
 }

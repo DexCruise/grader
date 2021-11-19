@@ -1,9 +1,9 @@
-import java.util.TreeMap;
+import java.util.HashMap;
 
 public class StudentRecord implements java.io.Serializable {
     public int id;
     public Name name;
-    public final TreeMap<String, Double> scores = new TreeMap<>();
+    public final HashMap<String, Double> scores = new HashMap<>();
 
 
     StudentRecord(int start_id, Name start_name) {
@@ -38,5 +38,9 @@ public class StudentRecord implements java.io.Serializable {
 
     Name getName() {
         return name;
+    }
+
+    void removeScore(String assignment) {
+        scores.remove(assignment);
     }
 }

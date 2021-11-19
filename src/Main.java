@@ -1,5 +1,6 @@
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -11,10 +12,16 @@ import java.util.Random;
 
 public class Main {
 
+    private static JFrame frame;
+
     private static final String ADD_STUDENT = "Add Student";
     private static final String DEL_STUDENT = "Remove Student";
     private static final String ADD_ASSIGNMENT = "Add Assignment";
     private static final String DEL_ASSIGNMENT = "Remove Assignment";
+    private static final String CHANGE_ASSIGNMENT_NAME = "Change Name";
+    private static final String CHANGE_ASSIGNMENT_NAME_2 = "Change Name 2";
+
+    private static final String TOGGLE_NAME_DISPLAY_STYLE = "Toggle Name Display Style";
 
     private static final String SAVE_AS = "Save As";
     private static final String SAVE = "Save";
@@ -25,12 +32,14 @@ public class Main {
     private static JTable studentTable;
     private static StudentList students;
 
+    private static int nameDisplayStyle = NameDisplayStyle.LAST_FIRST;
+
     private static final class NameDisplayStyle {
         public static final int FIRST_FIRST = 0, LAST_FIRST = 1;
     }
 
-    private static class Model extends DefaultTableModel {
-        private static final int nameDisplayStyle = NameDisplayStyle.LAST_FIRST;
+    private static class Model extends DefaultTableModel  {
+
 
         public int getColumnCount() {
             return students.getAssignmentCount() + 2;
@@ -48,8 +57,10 @@ public class Main {
             try {
                 if (col == 0) {
                     students.setID(row, Integer.parseInt(val.toString()));
+                    resizeColumnsToFit();
                 } else if (col == 1) {
                     students.setName(row, Name.parseName(val.toString()));
+                    resizeColumnsToFit();
                 } else {
                     students.setScore(row, students.getAssignmentAtID(col - 2), Double.parseDouble(val.toString()));
                 }
@@ -79,12 +90,10 @@ public class Main {
                 return students.getStudentID(row);
             }
             if (col == 1) {
-                if (nameDisplayStyle == NameDisplayStyle.FIRST_FIRST) {
-                    return students.getNameAtID(row).firstFirst();
-                }
-                if (nameDisplayStyle == NameDisplayStyle.LAST_FIRST) {
-                    return students.getNameAtID(row).lastFirst();
-                }
+                if (nameDisplayStyle == NameDisplayStyle.FIRST_FIRST) return students.getNameAtID(row).firstFirst();
+
+                if (nameDisplayStyle == NameDisplayStyle.LAST_FIRST) return students.getNameAtID(row).lastFirst();
+
                 throw new IllegalStateException("Illegal Name Display Style: " + nameDisplayStyle);
             } else {
                 return students.getStudentScore(row, students.getAssignmentAtID(col - 2));
@@ -110,7 +119,7 @@ public class Main {
      */
 
     private static void displayGUI(JTable table) {
-        JFrame frame = new JFrame("StudentRecords v0.0.0 by Dexter");
+        frame = new JFrame("StudentRecords v0.0.0 by Dexter");
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
         JScrollPane scrollPane = new JScrollPane(table,
@@ -131,28 +140,36 @@ public class Main {
         JButton addStudentButton = new JButton("Add Student");
         JButton deleteAssignmentButton = new JButton("Delete Assignment");
         JButton deleteStudentButton = new JButton("Delete Student");
+        JButton changeAssignmentNameButton = new JButton("Change Assignment Name");
 
+        JCheckBox firstOrLastFirst = new JCheckBox("First name first");
 
         //set the commands that each of the buttons send
         addAssignmentButton.setActionCommand(ADD_ASSIGNMENT);
         addStudentButton.setActionCommand(ADD_STUDENT);
         deleteAssignmentButton.setActionCommand(DEL_ASSIGNMENT);
         deleteStudentButton.setActionCommand(DEL_STUDENT);
-
+        changeAssignmentNameButton.setActionCommand(CHANGE_ASSIGNMENT_NAME);
+        firstOrLastFirst.setActionCommand(TOGGLE_NAME_DISPLAY_STYLE);
 
         //nicely ask each button to work
         addAssignmentButton.addActionListener(homeMenuButtonListener);
         addStudentButton.addActionListener(homeMenuButtonListener);
         deleteAssignmentButton.addActionListener(homeMenuButtonListener);
         deleteStudentButton.addActionListener(homeMenuButtonListener);
+        changeAssignmentNameButton.addActionListener(homeMenuButtonListener);
+        firstOrLastFirst.addActionListener(homeMenuButtonListener);
 
+
+        buttonPanel.add(firstOrLastFirst);
         buttonPanel.add(addAssignmentButton);
         buttonPanel.add(deleteAssignmentButton);
         buttonPanel.add(addStudentButton);
         buttonPanel.add(deleteStudentButton);
+        buttonPanel.add(changeAssignmentNameButton);
 
         buttonPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 20));
-        buttonPanel.setMinimumSize(new Dimension(200, 20));
+        buttonPanel.setMinimumSize(new Dimension(400, 20));
 
         JTabbedPane ribbon = new JTabbedPane(JTabbedPane.TOP);
 
@@ -186,6 +203,33 @@ public class Main {
         frame.pack();
 
         frame.setVisible(true);
+    }
+
+    public static void resizeColumnsToFit() {
+        for (int col = 0; col < studentTable.getColumnCount(); col++) {
+            TableColumn tableColumn = studentTable.getColumnModel().getColumn(col);
+//            tableColumn.setMinWidth(studentTable.getColumnName(col).length() * 20);
+//            tableColumn.setMaxWidth(200);
+            int preferredWidth = tableColumn.getMinWidth();
+            int maxWidth = tableColumn.getMaxWidth();
+
+            for (int row = 0; row < studentTable.getRowCount(); row++) {
+                TableCellRenderer cellRenderer = studentTable.getCellRenderer(row, col);
+                Component c = studentTable.prepareRenderer(cellRenderer, row, col);
+                int width = c.getPreferredSize().width + studentTable.getIntercellSpacing().width;
+                preferredWidth = Math.max(preferredWidth, width);
+
+                //  We've exceeded the maximum width, no need to check other rows
+
+                if (preferredWidth >= maxWidth) {
+                    preferredWidth = maxWidth;
+                    break;
+                }
+            }
+            tableColumn.setPreferredWidth(preferredWidth);
+
+        }
+        studentTable.setModel(new Model());
     }
 
     /**
@@ -242,26 +286,54 @@ public class Main {
 
         studentTable = createStudentTable();
 
+        studentTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+
+
         displayGUI(studentTable);
 
     }
 
     private static class HomeMenuButtonListener implements ActionListener {
         public void actionPerformed(final ActionEvent ev) {
-            switch (ev.getActionCommand()) {
-                case ADD_STUDENT -> {
-                    students.addStudent(-1, new Name("Student", "Name"));
-                    DefaultTableModel model = (DefaultTableModel) studentTable.getModel();
-                    model.addRow(students.getDataForNewestStudent());
-                }
-                case ADD_ASSIGNMENT -> {
-                    students.addAssignment("Assignment " + students.getAssignmentCount());
-                    studentTable.addColumn(new TableColumn(-1));
-                }
-//                case DEL_ASSIGNMENT -> System.out.println("No Deleting Yet!");
-//                case DEL_STUDENT -> System.out.println("No Deleting Yet!");
-            }
+            JTextField field = new JTextField("assignment name");
+            JFrame popup = new JFrame("Select new assignment name:");
 
+            switch (ev.getActionCommand()) {
+                case ADD_STUDENT -> students.addStudent(-1, new Name("Student", "Name"));
+                case ADD_ASSIGNMENT -> students.addAssignment("Assignment " + students.getAssignmentCount() + 1);
+                case DEL_ASSIGNMENT -> students.deleteAssignment(studentTable.getSelectedColumn() - 2);
+                case DEL_STUDENT -> students.deleteStudent(studentTable.getSelectedRow());
+                case CHANGE_ASSIGNMENT_NAME -> {
+                    JPanel panel = new JPanel();
+
+                    popup.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+
+                    JButton set = new JButton("Set name");
+                    set.setActionCommand(CHANGE_ASSIGNMENT_NAME_2);
+                    set.addActionListener(this);
+
+                    panel.add(set);
+                    panel.add(field);
+                    field.selectAll();
+
+                    popup.add(panel);
+                    popup.pack();
+                    popup.setVisible(true);
+                }
+                case CHANGE_ASSIGNMENT_NAME_2 -> {
+                    students.setAssignmentName(studentTable.getSelectedColumn() - 2, field.getText());
+                    popup.dispose();
+                }
+                case TOGGLE_NAME_DISPLAY_STYLE -> {
+                    if (nameDisplayStyle == NameDisplayStyle.LAST_FIRST) {
+                        nameDisplayStyle = NameDisplayStyle.FIRST_FIRST;
+                    } else if (nameDisplayStyle == NameDisplayStyle.FIRST_FIRST) {
+                        nameDisplayStyle = NameDisplayStyle.LAST_FIRST;
+                    }
+                }
+            }
+            resizeColumnsToFit();
+            studentTable.setModel(new Model());
             studentTable.repaint();
         }
     }
